@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "title": "Python Basics",
+      "description": "Beginner-level Python questions",
+      "questions": [
+        {
+          "text": "What is the output of print(2 + 3 * 2)?",
+          "options": ["10", "8", "7", "6"],
+          "correct_index": 2
+        },
+        {
+          "text": "Which of the following is a list in Python?",
+          "options": ["{1, 2, 3}", "(1, 2, 3)", "[1, 2, 3]", "<1, 2, 3>"],
+          "correct_index": 2
+        }
+      ]
+    },
+    {
+      "title": "Math Quick Test",
+      "description": "2 simple math questions",
+      "questions": [
+        {
+          "text": "5 * 4 = ?",
+          "options": ["9", "10", "15", "20"],
+          "correct_index": 3
+        },
+        {
+          "text": "Square root of 81?",
+          "options": ["7", "8", "9", "10"],
+          "correct_index": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and secrets
+.env
+.env.*
+.python-version
+
+# Test and type caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Coverage and reports
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Build and packaging
+build/
+dist/
+wheelhouse/
+.eggs/
+*.egg-info/
+*.egg
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and PIDs
+logs/
+*.log
+*.pid
+
+# Databases
+db.sqlite3
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (if any front-end tooling)
+node_modules/
+
+# Local tooling
+.cache/
+tmp/
+temp/
