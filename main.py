@@ -28,9 +28,9 @@ from backend import (
 )
 
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+# BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 # ADMIN_IDS = {int(x) for x in os.environ.get("ADMIN_IDS", "").replace(" ", "").split(",") if x.isdigit()}
-
+BOT_TOKEN = "8428673351:AAFCraPsPOteSMmh3NvCKUSzpQ4ZldVEwGA"
 ADMIN_IDS = [6550264522]
 
 PENDING_COUNT: Dict[int, int] = {}
