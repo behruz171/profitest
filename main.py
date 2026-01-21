@@ -1,6 +1,7 @@
 import asyncio
 import os
 import json
+import random
 from typing import List, Optional, Dict
 
 from aiogram import Bot, Dispatcher, F
@@ -50,6 +51,9 @@ def render_question(session_id: int, index: int) -> Optional[tuple[str, InlineKe
     if not q:
         return None
     options = get_question_options(q["id"])
+    # shuffle options order for display
+    options = list(options)
+    random.shuffle(options)
     sess = get_session(session_id)
     total = len(json.loads(sess["questions_json"])) if sess else 0
     lines: List[str] = []
@@ -67,6 +71,10 @@ def render_question(session_id: int, index: int) -> Optional[tuple[str, InlineKe
     kb.button(text="⏹️ To'xtatish", callback_data=f"stop:{session_id}")
     kb.adjust(4, 1)
     return text, kb.as_markup()
+
+
+def _is_admin(user_id: Optional[int]) -> bool:
+    return bool(user_id and (user_id in ADMIN_IDS))
 
 
 async def prompt_counts(call: CallbackQuery, test_id: int):
@@ -107,7 +115,8 @@ async def on_help(message: Message):
         "Buyruqlar:\n"
         "/start — testni tanlash\n"
         "/help — yordam\n"
-        "Adminlar uchun: JSON faylni yuboring (.json), bot uni import qiladi."
+        "/results — natijalar\n"
+        "Adminlar uchun: /admin yoki JSON faylni yuboring (.json)"
     )
     await message.answer(text)
 
@@ -160,7 +169,7 @@ async def on_answer(call: CallbackQuery):
 
 
 async def on_admin_json(message: Message, bot: Bot):
-    if message.from_user and message.from_user.id not in ADMIN_IDS:
+    if message.from_user and not _is_admin(message.from_user.id):
         return
     if not message.document or not message.document.file_name.lower().endswith(".json"):
         return
@@ -283,10 +292,68 @@ async def on_results(message: Message):
     await message.answer("\n".join(lines))
 
 
+async def on_admin(message: Message):
+    if not _is_admin(message.from_user.id if message.from_user else None):
+        return
+    rows = list_tests()
+    if not rows:
+        await message.answer("Testlar yo'q.")
+        return
+    kb = InlineKeyboardBuilder()
+    for r in rows:
+        kb.button(text=f"❌ O'chirish: {r['title']}", callback_data=f"del_req:{r['id']}")
+    kb.adjust(1)
+    await message.answer("Admin panel — testlarni o'chirish:", reply_markup=kb.as_markup())
+
+
+async def on_delete_request(call: CallbackQuery):
+    if not _is_admin(call.from_user.id if call.from_user else None):
+        await call.answer("Ruxsat yo'q.", show_alert=True)
+        return
+    try:
+        _, tid = call.data.split(":")
+        test_id = int(tid)
+    except Exception:
+        await call.answer("Xatolik.")
+        return
+    # ask for confirmation
+    kb = InlineKeyboardBuilder()
+    kb.button(text="Ha, o'chirish", callback_data=f"del_yes:{test_id}")
+    kb.button(text="Bekor qilish", callback_data="del_cancel")
+    kb.adjust(2)
+    await call.message.answer("Haqiqatan ham ushbu testni o'chirmoqchimisiz?", reply_markup=kb.as_markup())
+    await call.answer()
+
+
+async def on_delete_confirm(call: CallbackQuery):
+    from backend import delete_test  # local import to avoid circular issues
+    if not _is_admin(call.from_user.id if call.from_user else None):
+        await call.answer("Ruxsat yo'q.", show_alert=True)
+        return
+    try:
+        _, tid = call.data.split(":")
+        test_id = int(tid)
+    except Exception:
+        await call.answer("Xatolik.")
+        return
+    n = delete_test(test_id)
+    if n:
+        await call.message.answer("Test o'chirildi.")
+    else:
+        await call.message.answer("Test topilmadi yoki allaqachon o'chirilgan.")
+    await call.answer()
+
+
+async def on_delete_cancel(call: CallbackQuery):
+    await call.message.answer("Bekor qilindi.")
+    await call.answer()
+
+
 def setup_dispatcher(dp: Dispatcher):
     dp.message.register(on_start, Command("start"))
     dp.message.register(on_help, Command("help"))
     dp.message.register(on_results, Command("results"))
+    dp.message.register(on_admin, Command("admin"))
     dp.message.register(on_admin_json, F.document)
     dp.message.register(on_custom_number, F.text)
     dp.callback_query.register(on_select_test, F.data.startswith("choose_test:"))
@@ -295,6 +362,9 @@ def setup_dispatcher(dp: Dispatcher):
     dp.callback_query.register(on_answer, F.data.startswith("ans:"))
     dp.callback_query.register(on_stop, F.data.startswith("stop:"))
     dp.callback_query.register(on_resume, F.data.startswith("resume:"))
+    dp.callback_query.register(on_delete_request, F.data.startswith("del_req:"))
+    dp.callback_query.register(on_delete_confirm, F.data.startswith("del_yes:"))
+    dp.callback_query.register(on_delete_cancel, F.data == "del_cancel")
 
 
 async def main() -> None:

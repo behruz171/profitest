@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import random
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "db.sqlite3"))
@@ -162,6 +163,17 @@ def list_tests() -> List[sqlite3.Row]:
     return rows
 
 
+def delete_test(test_id: int) -> int:
+    """Delete a test and all its questions/options by cascades. Returns number of deleted tests (0 or 1)."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM tests WHERE id = ?", (test_id,))
+    affected = cur.rowcount
+    conn.commit()
+    conn.close()
+    return affected
+
+
 def get_test_questions(test_id: int) -> List[sqlite3.Row]:
     conn = get_connection()
     cur = conn.cursor()
@@ -221,6 +233,8 @@ def create_session(user_id: int, test_id: int, limit_count: int) -> int:
         raise ValueError("Testda savollar yo'q")
     if limit_count <= 0:
         limit_count = len(all_q_ids)
+    # shuffle question order and take the requested amount
+    random.shuffle(all_q_ids)
     sel = all_q_ids[: min(limit_count, len(all_q_ids))]
     payload = json.dumps(sel)
     conn = get_connection()
